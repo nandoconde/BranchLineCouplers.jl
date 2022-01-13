@@ -1,0 +1,10 @@
+name = "BranchLineCouplers"
+uuid = "768ffef2-7688-442e-b1f2-0ba97c3de565"
+authors = ["nandoconde <fernando.conde-pumpido.velasco@alumnos.upm.es>"]
+version = "0.1.0"
+
+[deps]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+GenericLinearAlgebra = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
