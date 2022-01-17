@@ -2,15 +2,15 @@ function interactive_coupler_design(f₀ = 1.0)
     ## SETTINGS
     # Coupler
     n = 3
-    BW_REL = 0.3
-    K = 0.1
+    K = "0.1"
+    BW_REL = "0.3"
     POLYNOMIAL = :Butterworth
 
     # Plotting window
     _title = "Branch-Line Coupler Design"
-    _res = (960, 360);
+    _res = (1920, 1080);
     _font = "Seaford";
-    _fontsize = 30;
+    _fontsize = 20;
     _linewidth = 2;
     _color = :Hiroshige# TODO
 
@@ -18,7 +18,7 @@ function interactive_coupler_design(f₀ = 1.0)
     PTS = 1000
     fn_titles = ["Return losses", "Directivity", "Insertion Losses", "Coupling"]
     fn_labels = ["Γ", "D", "IL", "C"]
-    f̄ = range(0.7, 1.3, length = PTS)
+    f̄ = range(0.85, 1.15, length = PTS)
     f = f̄ .* f₀
     t = im .* tan.(π/4 .* f̄)
 
@@ -37,77 +37,109 @@ function interactive_coupler_design(f₀ = 1.0)
     fig = Figure(resolution = _res)
 
     # Title
-    supertitle = Label(fig[1,1:10], _title, textsize = 30)
+    supertitle = Label(fig[1,1:10], _title, textsize = 40)
 
     # Grid of plots
     plot_grid = GridLayout()
     fig.layout[2,1:10] = plot_grid
-    ax = [Axis(plot_grid[reverse(fldmod1(i,2))...], 
+    axs = [Axis(plot_grid[reverse(fldmod1(i,2))...], 
                 title = fn_titles[i],
                 xlabel = "GHz",
                 ylabel = "dB") for i in 1:4]
-    for (ax_, fn_, lb_) in zip(ax, funs, fn_labels)
-        lines!(ax_, f, db.(fn_.(t)), label = lb_)
-        axislegend(ax_)
-        xlims!(ax_, f[1], f[end])
-    end
+    # for (ax_, fn_, lb_) in zip(axs, funs, fn_labels)
+    #     lines!(ax_, f, db.(fn_.(t)), label = lb_)
+    #     axislegend(ax_)
+    #     xlims!(ax_, f[1], f[end])
+    # end
+
     
-
-
-    ## ADMITTANCE DISPLAY
+    
+    # ## ADMITTANCE DISPLAY
     ab_display = GridLayout()
     fig.layout[3,1:10] = ab_display
     a_labels = [ Label(ab_display[1,i], 
-                    "", #@sprintf("%8.4f", a[i])
-                    textsize = 10,
+                    "", 
+                    textsize = 13,
                     tellwidth = false) for i in 1:10]
     b_labels = [ Label(ab_display[2,i], 
-                    "", #@sprintf("%8.4f", b[i])
-                    textsize = 10,
+                    "", 
+                    textsize = 13,
                     tellwidth = false) for i in 1:10]
-    
+
+    ## GENERATE FIRST PLOT
+    _update_plot!(axs, a_labels, b_labels, c, fn_labels, t, f)
 
     ## PARAMETER INPUTS
     # n
-    label_n = Label(fig[4,1], "n = $(n)")
-    input_n = Slider(fig[4, 2:3], range = 1:1:10, startvalue = n)
+    label_n = Label(fig[4,1], "n = ", halign = :right)
+    input_n = Textbox(fig[4, 2], 
+                placeholder = "Enter number of branches",
+                stored_string = "$(n)",
+                validator = Int,
+                tellwidth = false, 
+                halign = :left)
     # K
-    label_k = Label(fig[5,1], "K = $(K)")
-    input_k = Textbox(fig[5,2:3], 
+    label_k = Label(fig[5,1], "K = ", halign = :right)
+    input_k = Textbox(fig[5,2], 
                 placeholder = "Enter a coupling factor",
-                stored_string = "0.1",
-                validator = BigFloat, tellwidth = false)
+                stored_string = K,
+                validator = BigFloat, 
+                tellwidth = false, 
+                halign = :left)
     # BW_REL
-    label_bwrel = Label(fig[6,1], "BW_REL = $(BW_REL)")
-    input_bwrel = Textbox(fig[6,2:3], 
+    label_bwrel = Label(fig[6,1], "BW_REL = ", halign = :right)
+    input_bwrel = Textbox(fig[6,2], 
                     placeholder = "Enter a bandwidth factor",
-                    stored_string = "0.3",
-                    validator = BigFloat, tellwidth = false)
+                    stored_string = BW_REL,
+                    validator = BigFloat, 
+                    tellwidth = false, 
+                    halign = :left)
     # POLYNOMIAL
-    label_polynomial = Label(fig[7,1], "Polynomial = $(String(POLYNOMIAL))")
+    label_polynomial = Label(fig[7,1], "Polynomial = ", halign = :right)
     menu_polynomial = Menu(fig[7,2], 
                             options = zip(["Butterworth", "Chebyshev"], 
                                 [:Butterworth,:Chebyshev]),
                             i_selected = 1,
-                            selection = :Butterworth)
+                            selection = POLYNOMIAL, 
+                            halign = :left)
 
-    # EVENT-DRIVEN PLOTTING
-    # Observable coupler
-    obs_c = @lift(
-        [synthesise_coupler(
-            $(input_n.value), 
-            $(input_k.stored_string), 
-            $(input_bwrel.stored_string), 
-            $(menu_polynomial.selection))])
-
-    # Event plot
-    on(obs_c) do 
-        _update_plot!(ax, a_labels, b_labels, to_value(obs_c)[1], fn_labels, t, f)
-        label_n.text = "$(input_n.value)"
-        label_k.text = "$(input_k.stored_string)"
-        label_polynomial.text = "$(input_bwrel.stored_string)"
-        label_polynomial.text = "$(String(menu_polynomial.selection))"
+    ## EVENT-DRIVEN PLOTTING
+    # n event
+    on(input_n.stored_string) do new_n
+        new_c = synthesise_coupler(parse(Int,to_value(new_n)), 
+                        to_value(input_k.stored_string), 
+                        to_value(input_bwrel.stored_string), 
+                        to_value(menu_polynomial.selection))
+        _update_plot!(axs, a_labels, b_labels, new_c, fn_labels, t, f)
     end
+
+    # K event
+    on(input_k.stored_string) do new_k
+        new_c = synthesise_coupler(parse(Int,to_value(input_n.stored_string)), 
+                        to_value(new_k), 
+                        to_value(input_bwrel.stored_string), 
+                        to_value(menu_polynomial.selection))
+        _update_plot!(axs, a_labels, b_labels, new_c, fn_labels, t, f)
+    end
+
+    # BW event
+    on(input_bwrel.stored_string) do new_bw
+        new_c = synthesise_coupler(parse(Int,to_value(input_n.stored_string)), 
+                        to_value(input_k.stored_string), 
+                        to_value(new_bw), 
+                        to_value(menu_polynomial.selection))
+        _update_plot!(axs, a_labels, b_labels, new_c, fn_labels, t, f)
+    end
+
+    # Polynomial event
+    on(menu_polynomial.selection) do new_pol
+        new_c = synthesise_coupler(parse(Int,to_value(input_n.stored_string)), 
+                        to_value(input_k.stored_string), 
+                        to_value(input_bwrel.stored_string), 
+                        to_value(new_pol))
+        _update_plot!(axs, a_labels, b_labels, new_c, fn_labels, t, f)
+    end
+
     
     return fig
 end

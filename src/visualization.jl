@@ -47,16 +47,27 @@ end
 
 function _update_plot!(axs, a_labels, b_labels, coupler, labels, t, f)
     funs = analysis_functions(coupler)
+    
     for (ax_, fn_, lb_) in zip(axs, funs, labels)
+        empty!(ax_)
         lines!(ax_, f, db.(fn_.(t)), label = lb_)
         axislegend(ax_)
         xlims!(ax_, f[1], f[end])
     end
-    for i in eachindex(coupler.a)
-        a_labels[i].text = @sprintf("%8.4f", c.a[i])
+
+    ylims!(axs[1], -50, -10)
+    ylims!(axs[2], -50, -10)
+
+    for i in eachindex(a_labels)
+        checkindex(Bool, eachindex(coupler.a), i) ?
+        a_labels[i].text = @sprintf("%8.4f", coupler.a[i]) :
+        a_labels[i].text = ""
     end
-    for i in eachindex(coupler.b)
-        b_labels[i].text = @sprintf("%8.4f", c.b[i])
-        b_labels[i].color = (b[i] > 1) ? (:red) : (:blue)
+    for i in eachindex(b_labels)
+        checkindex(Bool, eachindex(coupler.b), i) ?
+            (b_labels[i].text = @sprintf("%8.4f", coupler.b[i]); 
+                b_labels[i].color = (coupler.b[i] > 1) ? (:red) : (:blue)) :
+            b_labels[i].text = ""
+        
     end 
 end

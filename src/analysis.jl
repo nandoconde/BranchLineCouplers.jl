@@ -1,5 +1,5 @@
 function analysis_functions(c::Coupler)
-    # Extract number of braches
+    # Extract number of branches
     n = length(c.a)
 
     # Form ABCD matrix
